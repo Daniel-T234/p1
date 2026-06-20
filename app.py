@@ -124,17 +124,7 @@ section[data-testid="stSidebar"] > div:first-child {
 [data-testid="stSidebar"] [data-testid="stSelectbox"] svg { fill: white !important; }
 [data-testid="stSidebar"] [data-testid="stSelectbox"] span { color: white !important; }
 
-.sidebar-footer {
-    position: absolute;
-    bottom: 1.5rem;
-    left: 1.5rem;
-    right: 1.5rem;
-    font-size: 0.7rem;
-    color: rgba(255,255,255,0.3) !important;
-    line-height: 1.7;
-    border-top: 1px solid rgba(255,255,255,0.1);
-    padding-top: 1rem;
-}
+
 
 /* ── MAIN AREA ── */
 
@@ -285,34 +275,7 @@ section[data-testid="stSidebar"] > div:first-child {
     background: var(--border);
 }
 
-/* Macro chips */
-.macro-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.6rem;
-    margin-bottom: 0.5rem;
-}
-.macro-chip {
-    background: white;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 0.5rem 0.85rem;
-    font-size: 0.82rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.1rem;
-}
-.macro-chip .mc-label {
-    font-size: 0.65rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.7px;
-    color: var(--text-muted);
-}
-.macro-chip .mc-value {
-    font-weight: 600;
-    color: var(--green-deep);
-}
+
 
 /* All-crops table */
 .price-table {
@@ -638,15 +601,6 @@ with st.sidebar:
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown("""
-    <div class="sidebar-footer">
-        Model: Random Forest<br>
-        Training data: 2009 – 2024<br>
-        58 markets · 14 states<br>
-        Source: WFP Nigeria
-    </div>
-    """, unsafe_allow_html=True)
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # MAIN AREA — results, always rendered (no button gate)
@@ -655,7 +609,7 @@ icon     = COMMODITY_ICON.get(commodity_name, "🌾")
 accuracy = MODEL_ACCURACY.get(commodity_name, 80.0)
 
 try:
-    pred_price, macro_ctx = predict_price(
+    pred_price, _ = predict_price(
         commodity_col, selected_market, selected_state,
         selected_year, selected_month, bundle
     )
@@ -700,16 +654,6 @@ try:
     </div>
     """, unsafe_allow_html=True)
 
-    # ── Macro context ──
-    st.markdown('<div class="sec-hdr">Economic context</div>', unsafe_allow_html=True)
-    chips = "".join(
-        f'<div class="macro-chip">'
-        f'<span class="mc-label">{k}</span>'
-        f'<span class="mc-value">{v}</span>'
-        f'</div>'
-        for k, v in macro_ctx.items()
-    )
-    st.markdown(f'<div class="macro-row">{chips}</div>', unsafe_allow_html=True)
 
     # ── Historical sparkline ──
     hist_prices = bundle["price_history"].get(selected_market, {}).get(commodity_col, [])
