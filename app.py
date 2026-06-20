@@ -1,7 +1,7 @@
 """
-Agricultural Produce Price Predictor — Nigeria
-Final Year Project, Software Engineering
-Streamlit deployment app
+AgriPrice Nigeria
+Predictive Model of Agricultural Produce Pricing in Nigeria
+Final Year Project — Software Engineering
 
 Run with:
     pip install streamlit scikit-learn pandas numpy
@@ -22,293 +22,366 @@ warnings.filterwarnings("ignore")
 # PAGE CONFIG
 # ─────────────────────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="Nigeria Crop Price Predictor",
+    page_title="AgriPrice Nigeria",
     page_icon="🌾",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
-# CUSTOM CSS  — earthy green + warm cream palette, clean editorial feel
+# CUSTOM CSS
 # ─────────────────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&display=swap');
 
-/* Root palette */
 :root {
-    --green-deep:   #1B4332;
-    --green-mid:    #2D6A4F;
-    --green-light:  #40916C;
-    --green-pale:   #D8F3DC;
-    --cream:        #FAFAF5;
-    --sand:         #F1EDE3;
-    --text-dark:    #1A1A1A;
-    --text-muted:   #6B7280;
-    --gold:         #D4A017;
-    --border:       #E5E0D5;
+    --green-deep:  #1B4332;
+    --green-mid:   #2D6A4F;
+    --green-light: #40916C;
+    --green-pale:  #D8F3DC;
+    --cream:       #FAFAF5;
+    --sand:        #F1EDE3;
+    --text-dark:   #1A1A1A;
+    --text-muted:  #6B7280;
+    --border:      #E5E0D5;
 }
 
-/* Base */
 html, body, [class*="css"] {
     font-family: 'Inter', sans-serif;
     background-color: var(--cream);
     color: var(--text-dark);
 }
 
-/* Hide default Streamlit chrome */
+/* Hide Streamlit chrome */
 #MainMenu, footer, header { visibility: hidden; }
-.block-container { padding: 2rem 2.5rem 3rem; max-width: 1100px; }
+.block-container { padding: 2rem 2.5rem 3rem; max-width: 1060px; }
 
-/* ── HEADER ── */
-.app-header {
-    background: linear-gradient(135deg, var(--green-deep) 0%, var(--green-mid) 100%);
-    border-radius: 16px;
-    padding: 2.5rem 2.8rem;
-    margin-bottom: 2rem;
-    position: relative;
-    overflow: hidden;
+/* ── FORCE SIDEBAR ALWAYS OPEN — hide the collapse button ── */
+[data-testid="collapsedControl"] { display: none !important; }
+section[data-testid="stSidebar"] {
+    width: 300px !important;
+    min-width: 300px !important;
+    transform: none !important;
+    visibility: visible !important;
 }
-.app-header::after {
-    content: "🌾";
-    position: absolute;
-    right: 2rem;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 5rem;
-    opacity: 0.15;
+section[data-testid="stSidebar"] > div:first-child {
+    width: 300px !important;
 }
-.app-header h1 {
+
+/* ── SIDEBAR STYLES ── */
+[data-testid="stSidebar"] {
+    background-color: var(--green-deep) !important;
+    border-right: none;
+}
+[data-testid="stSidebar"] * { color: white !important; }
+
+.sidebar-brand {
+    padding: 1.8rem 1.5rem 1.4rem;
+    border-bottom: 1px solid rgba(255,255,255,0.12);
+    margin-bottom: 1.4rem;
+}
+.sidebar-brand .brand-name {
     font-family: 'DM Serif Display', serif;
-    font-size: 2.2rem;
+    font-size: 1.55rem;
     color: white;
-    margin: 0 0 0.4rem 0;
-    letter-spacing: -0.5px;
-    line-height: 1.2;
+    line-height: 1.15;
+    letter-spacing: -0.3px;
 }
-.app-header p {
-    color: rgba(255,255,255,0.75);
-    font-size: 0.95rem;
-    margin: 0;
-    font-weight: 300;
+.sidebar-brand .brand-name span {
+    color: #74C69D;
 }
-.app-header .badge {
-    display: inline-block;
-    background: rgba(255,255,255,0.15);
-    border: 1px solid rgba(255,255,255,0.3);
-    border-radius: 20px;
-    padding: 0.2rem 0.75rem;
-    font-size: 0.75rem;
-    color: rgba(255,255,255,0.9);
-    margin-top: 0.75rem;
-    letter-spacing: 0.5px;
+.sidebar-brand .brand-sub {
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.5);
+    margin-top: 0.3rem;
+    letter-spacing: 0.4px;
     text-transform: uppercase;
     font-weight: 500;
 }
 
-/* ── SIDEBAR ── */
-[data-testid="stSidebar"] {
-    background-color: var(--sand);
-    border-right: 1px solid var(--border);
+.sidebar-section {
+    padding: 0 1.5rem;
 }
-[data-testid="stSidebar"] .sidebar-title {
-    font-family: 'DM Serif Display', serif;
-    font-size: 1.2rem;
-    color: var(--green-deep);
-    margin-bottom: 0.25rem;
-}
-[data-testid="stSidebar"] .sidebar-sub {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    margin-bottom: 1.5rem;
-    line-height: 1.5;
-}
-
-/* ── CARDS ── */
-.result-card {
-    background: white;
-    border-radius: 16px;
-    padding: 2rem 2.2rem;
-    border: 1px solid var(--border);
-    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-    margin-bottom: 1.25rem;
-}
-.result-card.primary {
-    background: linear-gradient(135deg, var(--green-deep) 0%, var(--green-light) 100%);
-    border: none;
-    color: white;
-}
-.result-card .label {
-    font-size: 0.75rem;
+.sidebar-field-label {
+    font-size: 0.7rem;
     font-weight: 600;
     letter-spacing: 1px;
     text-transform: uppercase;
-    opacity: 0.7;
-    margin-bottom: 0.4rem;
-}
-.result-card .value {
-    font-family: 'DM Serif Display', serif;
-    font-size: 3rem;
-    line-height: 1;
-    margin-bottom: 0.3rem;
-}
-.result-card .sub {
-    font-size: 0.85rem;
-    opacity: 0.75;
-}
-.result-card.primary .label { color: rgba(255,255,255,0.75); }
-.result-card.primary .value { color: white; }
-.result-card.primary .sub   { color: rgba(255,255,255,0.7); }
-
-/* ── METRIC GRID ── */
-.metric-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-}
-.metric-tile {
-    background: white;
-    border-radius: 12px;
-    padding: 1.1rem 1.3rem;
-    border: 1px solid var(--border);
-    text-align: center;
-}
-.metric-tile .mt-label {
-    font-size: 0.7rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-    color: var(--text-muted);
+    color: rgba(255,255,255,0.5) !important;
     margin-bottom: 0.35rem;
-}
-.metric-tile .mt-value {
-    font-family: 'DM Serif Display', serif;
-    font-size: 1.6rem;
-    color: var(--green-deep);
-    line-height: 1;
-}
-.metric-tile .mt-sub {
-    font-size: 0.72rem;
-    color: var(--text-muted);
-    margin-top: 0.2rem;
+    margin-top: 1.1rem;
+    display: block;
 }
 
-/* ── INSIGHT BOX ── */
-.insight-box {
-    background: var(--green-pale);
-    border-left: 4px solid var(--green-mid);
-    border-radius: 0 10px 10px 0;
-    padding: 1rem 1.2rem;
-    margin-top: 1.25rem;
-    font-size: 0.88rem;
-    color: var(--green-deep);
-    line-height: 1.6;
+/* Override selectbox inside sidebar */
+[data-testid="stSidebar"] [data-testid="stSelectbox"] > div > div {
+    background: rgba(255,255,255,0.08) !important;
+    border: 1px solid rgba(255,255,255,0.15) !important;
+    border-radius: 8px !important;
+    color: white !important;
 }
-.insight-box strong { font-weight: 600; }
+[data-testid="stSidebar"] [data-testid="stSelectbox"] svg { fill: white !important; }
+[data-testid="stSidebar"] [data-testid="stSelectbox"] span { color: white !important; }
 
-/* ── SECTION LABEL ── */
-.section-label {
+.sidebar-footer {
+    position: absolute;
+    bottom: 1.5rem;
+    left: 1.5rem;
+    right: 1.5rem;
+    font-size: 0.7rem;
+    color: rgba(255,255,255,0.3) !important;
+    line-height: 1.7;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding-top: 1rem;
+}
+
+/* ── MAIN AREA ── */
+
+/* Page title strip */
+.page-eyebrow {
     font-size: 0.72rem;
     font-weight: 600;
     letter-spacing: 1.2px;
     text-transform: uppercase;
+    color: var(--green-mid);
+    margin-bottom: 0.3rem;
+}
+.page-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.85rem;
+    color: var(--green-deep);
+    margin: 0 0 0.2rem;
+    letter-spacing: -0.4px;
+    line-height: 1.2;
+}
+.page-subtitle {
+    font-size: 0.88rem;
     color: var(--text-muted);
-    margin: 1.5rem 0 0.75rem;
+    margin: 0 0 1.8rem;
 }
 
-/* ── TREND ROW ── */
-.trend-row {
-    display: flex;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-    margin-bottom: 1rem;
+/* Primary result hero */
+.result-hero {
+    background: linear-gradient(135deg, var(--green-deep) 0%, #1a5c42 100%);
+    border-radius: 18px;
+    padding: 2.2rem 2.5rem;
+    margin-bottom: 1.2rem;
+    position: relative;
+    overflow: hidden;
 }
-.trend-chip {
-    background: var(--sand);
+.result-hero::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 200px; height: 200px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 50%;
+}
+.result-hero::after {
+    content: '';
+    position: absolute;
+    bottom: -60px; right: 60px;
+    width: 160px; height: 160px;
+    background: rgba(116,198,157,0.08);
+    border-radius: 50%;
+}
+.result-hero .rh-eyebrow {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: #74C69D;
+    margin-bottom: 0.5rem;
+}
+.result-hero .rh-price {
+    font-family: 'DM Serif Display', serif;
+    font-size: 3.8rem;
+    color: white;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+}
+.result-hero .rh-unit {
+    font-size: 1rem;
+    color: rgba(255,255,255,0.6);
+    font-weight: 300;
+    margin-left: 0.3rem;
+}
+.result-hero .rh-meta {
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.6);
+    margin-top: 0.4rem;
+}
+.result-hero .rh-accuracy {
+    position: absolute;
+    top: 2.2rem;
+    right: 2.5rem;
+    text-align: right;
+}
+.result-hero .rh-accuracy .acc-val {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2rem;
+    color: #74C69D;
+    line-height: 1;
+}
+.result-hero .rh-accuracy .acc-label {
+    font-size: 0.68rem;
+    color: rgba(255,255,255,0.45);
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    display: block;
+    margin-top: 0.2rem;
+}
+
+/* Bag equivalent cards */
+.bag-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.2rem;
+}
+.bag-card {
+    background: white;
+    border-radius: 14px;
+    padding: 1.2rem 1.4rem;
     border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 0.45rem 0.85rem;
-    font-size: 0.82rem;
-    color: var(--text-dark);
+}
+.bag-card .bc-label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.35rem;
+}
+.bag-card .bc-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.9rem;
+    color: var(--green-deep);
+    line-height: 1;
+}
+.bag-card .bc-sub {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+}
+
+/* Section header */
+.sec-hdr {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 1.1px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin: 1.6rem 0 0.75rem;
     display: flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0.5rem;
 }
-.trend-chip .chip-label { color: var(--text-muted); font-size: 0.72rem; }
-
-/* ── PREDICT BUTTON ── */
-.stButton > button {
-    background: linear-gradient(135deg, var(--green-deep), var(--green-light)) !important;
-    color: white !important;
-    border: none !important;
-    border-radius: 10px !important;
-    padding: 0.65rem 2rem !important;
-    font-size: 0.95rem !important;
-    font-weight: 600 !important;
-    width: 100% !important;
-    letter-spacing: 0.3px !important;
-    transition: opacity 0.2s !important;
-    box-shadow: 0 4px 14px rgba(27,67,50,0.3) !important;
-}
-.stButton > button:hover { opacity: 0.88 !important; }
-
-/* ── SELECT / INPUT ── */
-[data-testid="stSelectbox"] > div > div,
-[data-testid="stNumberInput"] input {
-    border-radius: 8px !important;
-    border-color: var(--border) !important;
-    background: white !important;
+.sec-hdr::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
 }
 
-/* ── DIVIDER ── */
-.custom-divider {
-    border: none;
-    border-top: 1px solid var(--border);
-    margin: 1.5rem 0;
+/* Macro chips */
+.macro-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-bottom: 0.5rem;
+}
+.macro-chip {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.5rem 0.85rem;
+    font-size: 0.82rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+}
+.macro-chip .mc-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: var(--text-muted);
+}
+.macro-chip .mc-value {
+    font-weight: 600;
+    color: var(--green-deep);
 }
 
-/* ── TABLE ── */
+/* All-crops table */
 .price-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.88rem;
-    margin-top: 0.5rem;
+    font-size: 0.87rem;
 }
 .price-table th {
     background: var(--sand);
     color: var(--text-muted);
-    font-size: 0.72rem;
+    font-size: 0.68rem;
     font-weight: 600;
     letter-spacing: 0.8px;
     text-transform: uppercase;
-    padding: 0.6rem 0.9rem;
+    padding: 0.65rem 1rem;
     text-align: left;
     border-bottom: 1px solid var(--border);
 }
 .price-table td {
-    padding: 0.6rem 0.9rem;
+    padding: 0.65rem 1rem;
     border-bottom: 1px solid var(--border);
-    color: var(--text-dark);
 }
 .price-table tr:last-child td { border-bottom: none; }
 .price-table tr:hover td { background: var(--green-pale); }
-.badge-best {
-    background: var(--green-pale);
-    color: var(--green-deep);
-    border-radius: 6px;
-    padding: 0.15rem 0.5rem;
-    font-size: 0.72rem;
+.price-table .selected-row td { background: var(--green-pale); font-weight: 600; }
+.badge-sel {
+    background: var(--green-deep);
+    color: white;
+    border-radius: 5px;
+    padding: 0.1rem 0.45rem;
+    font-size: 0.65rem;
     font-weight: 600;
+    margin-left: 0.4rem;
+    vertical-align: middle;
 }
+
+/* Insight */
+.insight-box {
+    background: var(--green-pale);
+    border-left: 3px solid var(--green-mid);
+    border-radius: 0 10px 10px 0;
+    padding: 1rem 1.2rem;
+    margin-top: 1.2rem;
+    font-size: 0.86rem;
+    color: var(--green-deep);
+    line-height: 1.7;
+}
+
+/* Empty state */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--text-muted);
+}
+.empty-state .es-icon { font-size: 3.5rem; margin-bottom: 1rem; }
+.empty-state .es-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.5rem;
+    color: var(--green-deep);
+    margin-bottom: 0.5rem;
+}
+.empty-state .es-sub { font-size: 0.9rem; line-height: 1.6; }
 </style>
 """, unsafe_allow_html=True)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# DATA & MODEL LOADING  (cached — runs once on startup)
+# DATA & MODEL LOADING
 # ─────────────────────────────────────────────────────────────────────────────
-
 DATA_PATH = os.path.join(os.path.dirname(__file__), "dataset_engineered.csv")
 
 @st.cache_data(show_spinner=False)
@@ -335,13 +408,11 @@ def build_models(df):
         "admin1_enc", "market_enc",
     ]
 
-    # ── Macro lookup (mean per year) ──
     macro_lookup = (
         df.groupby("year")[["cpi", "fuel_price", "temperature", "rainfall"]]
         .mean().round(4)
     )
 
-    # ── Extrapolate macro to future years via linear trend ──
     future_macro = {}
     years_arr = macro_lookup.index.values.reshape(-1, 1)
     for col in ["cpi", "fuel_price", "temperature", "rainfall"]:
@@ -349,13 +420,11 @@ def build_models(df):
         for yr in range(2025, 2036):
             future_macro.setdefault(yr, {})[col] = round(float(reg.predict([[yr]])[0]), 4)
 
-    # ── Market metadata ──
     market_meta = (
         df.groupby(["market", "admin1"])[["latitude", "longitude", "admin1_enc", "market_enc"]]
         .first()
     )
 
-    # ── Price history per market per commodity (last 12 obs) ──
     price_history = {}
     for market, grp in df.groupby("market"):
         price_history[market] = {}
@@ -363,11 +432,9 @@ def build_models(df):
             hist = grp[["date", col]].dropna().sort_values("date")
             price_history[market][col] = hist[col].tolist()[-12:]
 
-    # ── Global commodity medians (fallback when no market history) ──
     commodity_medians = {col: df[col].median() for col in price_cols}
     base_cpi = float(macro_lookup.iloc[0]["cpi"])
 
-    # ── Train RF per commodity on full dataset ──
     trained_models = {}
     for col in price_cols:
         comm_feats = (
@@ -385,32 +452,27 @@ def build_models(df):
         trained_models[col] = {"model": rf, "features": feat_cols}
 
     return {
-        "price_cols":       price_cols,
-        "macro_lookup":     macro_lookup,
-        "future_macro":     future_macro,
-        "market_meta":      market_meta,
-        "price_history":    price_history,
-        "commodity_medians":commodity_medians,
-        "base_cpi":         base_cpi,
-        "trained_models":   trained_models,
-        "BASE_FEATURES":    BASE_FEATURES,
+        "price_cols":        price_cols,
+        "macro_lookup":      macro_lookup,
+        "future_macro":      future_macro,
+        "market_meta":       market_meta,
+        "price_history":     price_history,
+        "commodity_medians": commodity_medians,
+        "base_cpi":          base_cpi,
+        "trained_models":    trained_models,
+        "BASE_FEATURES":     BASE_FEATURES,
     }
 
 
 def predict_price(commodity_col, market, state, year, month, bundle):
-    """
-    Predict price per kg for commodity at a given market, year and month.
-    Returns (predicted_price_ngn, macro_context_dict) or raises ValueError.
-    """
-    macro_lookup  = bundle["macro_lookup"]
-    future_macro  = bundle["future_macro"]
-    market_meta   = bundle["market_meta"]
-    price_history = bundle["price_history"]
+    macro_lookup      = bundle["macro_lookup"]
+    future_macro      = bundle["future_macro"]
+    market_meta       = bundle["market_meta"]
+    price_history     = bundle["price_history"]
     commodity_medians = bundle["commodity_medians"]
-    base_cpi      = bundle["base_cpi"]
-    trained_models = bundle["trained_models"]
+    base_cpi          = bundle["base_cpi"]
+    trained_models    = bundle["trained_models"]
 
-    # ── Macro ──
     if year in macro_lookup.index:
         macro = macro_lookup.loc[year].to_dict()
     elif year in future_macro:
@@ -418,27 +480,22 @@ def predict_price(commodity_col, market, state, year, month, bundle):
     else:
         macro = macro_lookup.iloc[-1].to_dict()
 
-    # ── Market metadata ──
     try:
         meta = market_meta.xs(market, level="market").loc[state]
     except (KeyError, TypeError):
         try:
             meta = market_meta.xs(market, level="market").iloc[0]
         except Exception:
-            raise ValueError(f"Market '{market}' not found in dataset.")
+            raise ValueError(f"Market '{market}' not found.")
 
-    # ── Lag / rolling features from historical prices ──
     hist = price_history.get(market, {}).get(commodity_col, [])
-    if len(hist) == 0:
-        fallback = commodity_medians.get(commodity_col, 100.0)
-        hist = [fallback] * 12
+    if not hist:
+        hist = [commodity_medians.get(commodity_col, 100.0)] * 12
     while len(hist) < 12:
         hist = [hist[0]] + hist
 
-    lag1  = hist[-1]
-    lag3  = hist[-3]
-    lag6  = hist[-6]
-    lag12 = hist[-12]
+    lag1  = hist[-1];  lag3  = hist[-3]
+    lag6  = hist[-6];  lag12 = hist[-12]
     roll3 = float(np.mean(hist[-3:]))
     roll6 = float(np.mean(hist[-6:]))
     std3  = float(np.std(hist[-3:])) if len(hist) >= 3 else 0.0
@@ -465,16 +522,15 @@ def predict_price(commodity_col, market, state, year, month, bundle):
         f"{commodity_col}_deflated_lag3": defl3,
     }
 
-    model_info   = trained_models[commodity_col]
-    feat_vector  = np.array([feat_vals[f] for f in model_info["features"]]).reshape(1, -1)
-    pred         = float(model_info["model"].predict(feat_vector)[0])
-    pred         = max(pred, 0.0)
+    model_info  = trained_models[commodity_col]
+    feat_vector = np.array([feat_vals[f] for f in model_info["features"]]).reshape(1, -1)
+    pred        = max(float(model_info["model"].predict(feat_vector)[0]), 0.0)
 
     macro_ctx = {
-        "CPI":         round(macro["cpi"], 1),
-        "Fuel (₦/L)":  round(macro["fuel_price"], 1),
-        "Temp (°C)":   round(macro["temperature"], 1),
-        "Rainfall":    round(macro["rainfall"], 2),
+        "CPI":        round(macro["cpi"], 1),
+        "Fuel (₦/L)": round(macro["fuel_price"], 1),
+        "Temp (°C)":  round(macro["temperature"], 1),
+        "Rainfall":   round(macro["rainfall"], 2),
     }
     return round(pred, 2), macro_ctx
 
@@ -482,7 +538,6 @@ def predict_price(commodity_col, market, state, year, month, bundle):
 # ─────────────────────────────────────────────────────────────────────────────
 # CONSTANTS
 # ─────────────────────────────────────────────────────────────────────────────
-
 COMMODITY_DISPLAY = {
     "price_yam_per_kg":                 "Yam",
     "price_cassava_gari_yellow_per_kg": "Cassava Meal / Gari (Yellow)",
@@ -517,263 +572,223 @@ MODEL_ACCURACY = {
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# APP
+# LOAD
 # ─────────────────────────────────────────────────────────────────────────────
-
-# ── Load & build ──
-with st.spinner("Loading models — this takes about 30 seconds on first run…"):
-    df = load_data()
+with st.spinner("Loading models…"):
+    df     = load_data()
     bundle = build_models(df)
 
-# ── Header ──
-st.markdown("""
-<div class="app-header">
-    <h1>Nigeria Crop Price Predictor</h1>
-    <p>Predict agricultural produce prices per kilogram across Nigerian states and markets</p>
-    <span class="badge">Final Year Project · Software Engineering · RF Model · 76–91% Accuracy</span>
-</div>
-""", unsafe_allow_html=True)
+market_state_map = (
+    df[["market", "admin1"]].drop_duplicates()
+    .sort_values(["admin1", "market"])
+    .set_index("market")["admin1"].to_dict()
+)
+state_markets_map: dict = {}
+for mkt, st_ in market_state_map.items():
+    state_markets_map.setdefault(st_, []).append(mkt)
 
-# ── Sidebar — inputs ──
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SIDEBAR — permanent, inputs only
+# ─────────────────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown('<div class="sidebar-title">Prediction Inputs</div>', unsafe_allow_html=True)
-    st.markdown(
-        '<div class="sidebar-sub">Select the crop, location, and time period to get a predicted market price.</div>',
-        unsafe_allow_html=True,
-    )
-
-    # Market → state mapping
-    market_state_map = (
-        df[["market", "admin1"]].drop_duplicates()
-        .sort_values(["admin1", "market"])
-        .set_index("market")["admin1"].to_dict()
-    )
-    state_markets_map = {}
-    for mkt, state in market_state_map.items():
-        state_markets_map.setdefault(state, []).append(mkt)
-
-    # 1. Crop
-    st.markdown("**Crop**")
-    commodity_name = st.selectbox(
-        "Crop", options=list(COMMODITY_DISPLAY.values()), label_visibility="collapsed"
-    )
-    commodity_col = {v: k for k, v in COMMODITY_DISPLAY.items()}[commodity_name]
-
-    # 2. State
-    st.markdown("**State**")
-    all_states = sorted(state_markets_map.keys())
-    selected_state = st.selectbox("State", options=all_states, label_visibility="collapsed")
-
-    # 3. Market (cascades from state)
-    st.markdown("**Market**")
-    available_markets = sorted(state_markets_map.get(selected_state, []))
-    selected_market = st.selectbox("Market", options=available_markets, label_visibility="collapsed")
-
-    # 4. Year
-    st.markdown("**Year**")
-    selected_year = st.selectbox(
-        "Year", options=list(range(2025, 2031)), index=0, label_visibility="collapsed"
-    )
-
-    # 5. Month
-    st.markdown("**Month**")
-    month_options = MONTH_NAMES[1:]
-    selected_month_name = st.selectbox("Month", options=month_options, label_visibility="collapsed")
-    selected_month = month_options.index(selected_month_name) + 1
-
-    st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
-    predict_btn = st.button("Predict Price", use_container_width=True)
-
-    st.markdown("<hr class='custom-divider'>", unsafe_allow_html=True)
-    st.markdown(
-        f"<div style='font-size:0.75rem;color:var(--text-muted);line-height:1.6'>"
-        f"Model: <b>Random Forest</b><br>"
-        f"Training data: 2009–2024<br>"
-        f"Sources: WFP Nigeria, CBN<br>"
-        f"Unit: Nigerian Naira per kg"
-        f"</div>",
-        unsafe_allow_html=True,
-    )
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# MAIN CONTENT
-# ─────────────────────────────────────────────────────────────────────────────
-
-if not predict_btn:
-    # Welcome state
-    col1, col2 = st.columns([3, 2])
-    with col1:
-        st.markdown("""
-        <div class="result-card">
-            <div class="label">How to use</div>
-            <p style="margin:0.5rem 0 0;font-size:0.92rem;line-height:1.7;color:#374151">
-                Select a <b>crop</b>, <b>state</b>, <b>market</b>, <b>year</b>, and <b>month</b>
-                in the sidebar, then click <b>Predict Price</b>.<br><br>
-                The model will return an estimated price per kilogram in Nigerian Naira (₦),
-                along with the macroeconomic context used to generate the prediction.
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with col2:
-        st.markdown('<div class="section-label">Model accuracy by crop</div>', unsafe_allow_html=True)
-        acc_rows = "".join(
-            f"<tr><td>{COMMODITY_ICON.get(c,'🌾')} {c}</td>"
-            f"<td style='text-align:right;font-weight:600;color:var(--green-deep)'>{a:.1f}%</td></tr>"
-            for c, a in MODEL_ACCURACY.items()
-        )
-        st.markdown(
-            f"<table class='price-table'>"
-            f"<thead><tr><th>Crop</th><th style='text-align:right'>Accuracy</th></tr></thead>"
-            f"<tbody>{acc_rows}</tbody></table>",
-            unsafe_allow_html=True,
-        )
-
     st.markdown("""
-    <div class="insight-box">
-        <strong>About this predictor</strong><br>
-        Trained on WFP Nigeria food price survey data (2009–2024) covering 58 markets
-        across 14 states. The Random Forest model uses macroeconomic indicators (CPI,
-        fuel price), climate data (temperature, rainfall), geographic features, and
-        12 months of historical price lags to generate predictions.
+    <div class="sidebar-brand">
+        <div class="brand-name">AgriPrice<span>Nigeria</span></div>
+        <div class="brand-sub">Crop Price Intelligence</div>
     </div>
     """, unsafe_allow_html=True)
 
-else:
-    # ── RUN PREDICTION ──
-    try:
-        pred_price, macro_ctx = predict_price(
-            commodity_col, selected_market, selected_state,
-            selected_year, selected_month, bundle
-        )
+    st.markdown('<div class="sidebar-section">', unsafe_allow_html=True)
 
-        icon     = COMMODITY_ICON.get(commodity_name, "🌾")
-        accuracy = MODEL_ACCURACY.get(commodity_name, 80.0)
+    st.markdown('<span class="sidebar-field-label">Crop</span>', unsafe_allow_html=True)
+    commodity_name = st.selectbox(
+        "Crop", options=list(COMMODITY_DISPLAY.values()),
+        label_visibility="collapsed", key="crop"
+    )
+    commodity_col = {v: k for k, v in COMMODITY_DISPLAY.items()}[commodity_name]
 
-        # ── Primary result ──
-        st.markdown(f"""
-        <div class="result-card primary">
-            <div class="label">Predicted Price — {commodity_name}</div>
-            <div class="value">₦{pred_price:,.2f}</div>
-            <div class="sub">
-                {icon} per kilogram &nbsp;·&nbsp;
-                {selected_market}, {selected_state} &nbsp;·&nbsp;
-                {MONTH_NAMES[selected_month]} {selected_year}
-            </div>
+    st.markdown('<span class="sidebar-field-label">State</span>', unsafe_allow_html=True)
+    all_states = sorted(state_markets_map.keys())
+    selected_state = st.selectbox(
+        "State", options=all_states,
+        label_visibility="collapsed", key="state"
+    )
+
+    st.markdown('<span class="sidebar-field-label">Market</span>', unsafe_allow_html=True)
+    available_markets = sorted(state_markets_map.get(selected_state, []))
+    selected_market = st.selectbox(
+        "Market", options=available_markets,
+        label_visibility="collapsed", key="market"
+    )
+
+    st.markdown('<span class="sidebar-field-label">Year</span>', unsafe_allow_html=True)
+    selected_year = st.selectbox(
+        "Year", options=list(range(2025, 2031)), index=0,
+        label_visibility="collapsed", key="year"
+    )
+
+    st.markdown('<span class="sidebar-field-label">Month</span>', unsafe_allow_html=True)
+    month_options = MONTH_NAMES[1:]
+    selected_month_name = st.selectbox(
+        "Month", options=month_options,
+        label_visibility="collapsed", key="month"
+    )
+    selected_month = month_options.index(selected_month_name) + 1
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="sidebar-footer">
+        Model: Random Forest<br>
+        Training data: 2009 – 2024<br>
+        58 markets · 14 states<br>
+        Source: WFP Nigeria
+    </div>
+    """, unsafe_allow_html=True)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MAIN AREA — results, always rendered (no button gate)
+# ─────────────────────────────────────────────────────────────────────────────
+icon     = COMMODITY_ICON.get(commodity_name, "🌾")
+accuracy = MODEL_ACCURACY.get(commodity_name, 80.0)
+
+try:
+    pred_price, macro_ctx = predict_price(
+        commodity_col, selected_market, selected_state,
+        selected_year, selected_month, bundle
+    )
+
+    # ── Page heading ──
+    st.markdown(
+        f'<div class="page-eyebrow">Market Price Forecast</div>'
+        f'<div class="page-title">{icon} {commodity_name}</div>'
+        f'<div class="page-subtitle">'
+        f'{selected_market} &nbsp;·&nbsp; {selected_state} State &nbsp;·&nbsp; '
+        f'{MONTH_NAMES[selected_month]} {selected_year}'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+
+    # ── Hero price card ──
+    st.markdown(f"""
+    <div class="result-hero">
+        <div class="rh-eyebrow">Predicted price per kilogram</div>
+        <div class="rh-price">₦{pred_price:,.2f}<span class="rh-unit">/ kg</span></div>
+        <div class="rh-meta">Nigerian Naira &nbsp;·&nbsp; Random Forest model</div>
+        <div class="rh-accuracy">
+            <div class="acc-val">{accuracy:.1f}%</div>
+            <span class="acc-label">Model accuracy</span>
         </div>
-        """, unsafe_allow_html=True)
+    </div>
+    """, unsafe_allow_html=True)
 
-        # ── Context metrics ──
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.markdown(f"""
-            <div class="result-card">
-                <div class="label">Per 50 kg bag</div>
-                <div class="value" style="font-size:2.2rem">₦{pred_price*50:,.0f}</div>
-                <div class="sub">Standard wholesale unit</div>
-            </div>
-            """, unsafe_allow_html=True)
-        with col2:
-            st.markdown(f"""
-            <div class="result-card">
-                <div class="label">Per 100 kg bag</div>
-                <div class="value" style="font-size:2.2rem">₦{pred_price*100:,.0f}</div>
-                <div class="sub">Large wholesale unit</div>
-            </div>
-            """, unsafe_allow_html=True)
-        with col3:
-            st.markdown(f"""
-            <div class="result-card">
-                <div class="label">Model accuracy</div>
-                <div class="value" style="font-size:2.2rem;color:var(--green-mid)">{accuracy:.1f}%</div>
-                <div class="sub">Random Forest · test set MAPE</div>
-            </div>
-            """, unsafe_allow_html=True)
+    # ── Bag equivalents ──
+    st.markdown(f"""
+    <div class="bag-grid">
+        <div class="bag-card">
+            <div class="bc-label">Per 50 kg bag</div>
+            <div class="bc-value">₦{pred_price * 50:,.0f}</div>
+            <div class="bc-sub">Standard wholesale unit</div>
+        </div>
+        <div class="bag-card">
+            <div class="bc-label">Per 100 kg bag</div>
+            <div class="bc-value">₦{pred_price * 100:,.0f}</div>
+            <div class="bc-sub">Large wholesale unit</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-        # ── Macro context ──
-        st.markdown('<div class="section-label">Macroeconomic context used for this prediction</div>',
-                    unsafe_allow_html=True)
-        macro_html = "".join(
-            f'<div class="trend-chip"><span class="chip-label">{k}</span> <b>{v}</b></div>'
-            for k, v in macro_ctx.items()
-        )
-        st.markdown(f'<div class="trend-row">{macro_html}</div>', unsafe_allow_html=True)
+    # ── Macro context ──
+    st.markdown('<div class="sec-hdr">Economic context</div>', unsafe_allow_html=True)
+    chips = "".join(
+        f'<div class="macro-chip">'
+        f'<span class="mc-label">{k}</span>'
+        f'<span class="mc-value">{v}</span>'
+        f'</div>'
+        for k, v in macro_ctx.items()
+    )
+    st.markdown(f'<div class="macro-row">{chips}</div>', unsafe_allow_html=True)
 
-        # ── Historical price trend for this market ──
-        hist_prices = bundle["price_history"].get(selected_market, {}).get(commodity_col, [])
-        if hist_prices and len(hist_prices) >= 2:
-            st.markdown('<div class="section-label">Recent price history at this market</div>',
-                        unsafe_allow_html=True)
-
-            # Build sparkline data using Streamlit chart
-            chart_data = pd.DataFrame({
-                "Price (₦/kg)": hist_prices
-            })
-            st.line_chart(chart_data, height=160, use_container_width=True)
-
-        # ── All-crop price table for same location ──
+    # ── Historical sparkline ──
+    hist_prices = bundle["price_history"].get(selected_market, {}).get(commodity_col, [])
+    if hist_prices and len(hist_prices) >= 2:
         st.markdown(
-            f'<div class="section-label">All crop predictions — {selected_market}, {MONTH_NAMES[selected_month]} {selected_year}</div>',
+            '<div class="sec-hdr">Recent price history at this market</div>',
             unsafe_allow_html=True,
         )
+        chart_df = pd.DataFrame({"Price (₦/kg)": hist_prices})
+        st.line_chart(chart_df, height=155, use_container_width=True)
 
-        all_rows = []
-        for col_key, col_name in COMMODITY_DISPLAY.items():
-            try:
-                p, _ = predict_price(
-                    col_key, selected_market, selected_state,
-                    selected_year, selected_month, bundle
-                )
-                is_selected = col_key == commodity_col
-                all_rows.append((col_name, p, is_selected))
-            except Exception:
-                pass
-
-        all_rows.sort(key=lambda x: x[1], reverse=True)
-        rows_html = ""
-        for name, price, is_sel in all_rows:
-            badge = ' <span class="badge-best">selected</span>' if is_sel else ""
-            rows_html += (
-                f"<tr{'style=background:var(--green-pale)' if is_sel else ''}>"
-                f"<td>{COMMODITY_ICON.get(name,'🌾')} {name}{badge}</td>"
-                f"<td style='text-align:right;font-family:monospace;font-weight:600'>"
-                f"₦{price:,.2f}/kg</td>"
-                f"<td style='text-align:right'>₦{price*50:,.0f}</td>"
-                f"<td style='text-align:right'>₦{price*100:,.0f}</td>"
-                f"</tr>"
+    # ── All crops comparison ──
+    st.markdown(
+        f'<div class="sec-hdr">All crops — {selected_market}, {MONTH_NAMES[selected_month]} {selected_year}</div>',
+        unsafe_allow_html=True,
+    )
+    all_rows = []
+    for col_key, col_name in COMMODITY_DISPLAY.items():
+        try:
+            p, _ = predict_price(
+                col_key, selected_market, selected_state,
+                selected_year, selected_month, bundle
             )
+            all_rows.append((col_name, p, col_key == commodity_col))
+        except Exception:
+            pass
 
-        st.markdown(
-            f"<table class='price-table'>"
-            f"<thead><tr>"
-            f"<th>Crop</th>"
-            f"<th style='text-align:right'>Per kg</th>"
-            f"<th style='text-align:right'>Per 50 kg</th>"
-            f"<th style='text-align:right'>Per 100 kg</th>"
-            f"</tr></thead>"
-            f"<tbody>{rows_html}</tbody></table>",
-            unsafe_allow_html=True,
+    all_rows.sort(key=lambda x: x[1], reverse=True)
+    rows_html = ""
+    for name, price, is_sel in all_rows:
+        badge     = '<span class="badge-sel">selected</span>' if is_sel else ""
+        row_class = ' class="selected-row"' if is_sel else ""
+        rows_html += (
+            f"<tr{row_class}>"
+            f"<td>{COMMODITY_ICON.get(name,'🌾')} {name}{badge}</td>"
+            f"<td style='text-align:right;font-variant-numeric:tabular-nums'>₦{price:,.2f}/kg</td>"
+            f"<td style='text-align:right;font-variant-numeric:tabular-nums'>₦{price*50:,.0f}</td>"
+            f"<td style='text-align:right;font-variant-numeric:tabular-nums'>₦{price*100:,.0f}</td>"
+            f"</tr>"
         )
 
-        # ── Insight ──
-        hist_mean = float(np.mean(hist_prices)) if hist_prices else pred_price
-        pct_change = ((pred_price - hist_mean) / hist_mean * 100) if hist_mean > 0 else 0
-        direction  = "higher than" if pct_change > 0 else "lower than"
-        abs_pct    = abs(pct_change)
+    st.markdown(
+        f"<table class='price-table'>"
+        f"<thead><tr>"
+        f"<th>Crop</th>"
+        f"<th style='text-align:right'>Per kg</th>"
+        f"<th style='text-align:right'>Per 50 kg</th>"
+        f"<th style='text-align:right'>Per 100 kg</th>"
+        f"</tr></thead>"
+        f"<tbody>{rows_html}</tbody></table>",
+        unsafe_allow_html=True,
+    )
 
-        st.markdown(f"""
-        <div class="insight-box">
-            <strong>Prediction note</strong><br>
-            The predicted price of <b>₦{pred_price:,.2f}/kg</b> for {commodity_name} at {selected_market}
-            in {MONTH_NAMES[selected_month]} {selected_year} is approximately
-            <b>{abs_pct:.1f}% {direction}</b> the recent average price recorded at this market.
-            The model achieves <b>{accuracy:.1f}% accuracy</b> on held-out test data for this commodity.
-            Predictions for future years use extrapolated macroeconomic indicators and may carry
-            wider uncertainty than predictions within the 2009–2024 historical window.
+    # ── Insight ──
+    hist_mean  = float(np.mean(hist_prices)) if hist_prices else pred_price
+    pct_change = ((pred_price - hist_mean) / hist_mean * 100) if hist_mean > 0 else 0
+    direction  = "above" if pct_change > 0 else "below"
+    abs_pct    = abs(pct_change)
+
+    st.markdown(f"""
+    <div class="insight-box">
+        <strong>Prediction note</strong><br>
+        The forecast of <b>₦{pred_price:,.2f}/kg</b> for {commodity_name} at {selected_market} in
+        {MONTH_NAMES[selected_month]} {selected_year} sits approximately
+        <b>{abs_pct:.1f}% {direction}</b> the recent observed average at this market.
+        This model achieves <b>{accuracy:.1f}% accuracy</b> on held-out test data for this crop.
+        Forecasts beyond 2024 use extrapolated macro indicators and carry wider uncertainty.
+    </div>
+    """, unsafe_allow_html=True)
+
+except Exception as e:
+    st.markdown(f"""
+    <div class="empty-state">
+        <div class="es-icon">⚠️</div>
+        <div class="es-title">Prediction unavailable</div>
+        <div class="es-sub">
+            This market does not have sufficient price history for the selected crop.<br>
+            Try a different market or commodity.
+            <br><br><small style="color:#9CA3AF">{e}</small>
         </div>
-        """, unsafe_allow_html=True)
-
-    except Exception as e:
-        st.error(f"Prediction error: {e}")
-        st.info("Try selecting a different market or commodity. Not all markets have price history for all crops.")
+    </div>
+    """, unsafe_allow_html=True)
