@@ -35,7 +35,7 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&display=swap');
 
-/* LIGHT MODE */
+/* BASE STYLES */
 :root {
     --green-deep:  #1B4332;
     --green-mid:   #2D6A4F;
@@ -49,28 +49,12 @@ st.markdown("""
     --hero-grad:   linear-gradient(135deg,#1B4332,#1a5c42);
 }
 
-/* DARK MODE */
-[data-theme="dark"] {
-    --green-deep:  #74C69D;
-    --green-mid:   #52B788;
-    --green-pale:  #1B2E22;
-    --bg:          #0F1512;
-    --surface:     #1A2420;
-    --sand:        #1E2B25;
-    --text-dark:   #E8F5EE;
-    --text-muted:  #8BA89A;
-    --border:      #2A3D34;
-    --hero-grad:   linear-gradient(135deg,#0D2018,#163326);
-}
 
 html, body, [class*="css"] {
     font-family: 'Inter', sans-serif;
     background-color: var(--bg);
     color: var(--text-dark);
-    transition: background-color 0.25s, color 0.25s;
 }
-[data-theme="dark"] .stApp,
-[data-theme="dark"] .block-container { background-color: var(--bg) !important; }
 
 #MainMenu, footer, header { visibility: hidden; }
 .block-container { padding: 2rem 2.5rem 3rem; max-width: 1060px; }
@@ -85,7 +69,6 @@ section[data-testid="stSidebar"] > div:first-child { width: 300px !important; }
 
 /* Sidebar */
 [data-testid="stSidebar"] { background-color: #1B4332 !important; border-right: none; }
-[data-theme="dark"] [data-testid="stSidebar"] { background-color: #0D2018 !important; }
 [data-testid="stSidebar"] * { color: white !important; }
 
 .sidebar-brand {
@@ -138,10 +121,6 @@ section[data-testid="stSidebar"] > div:first-child { width: 300px !important; }
 .sidebar-link-row a { color: #74C69D !important; text-decoration: none; font-weight: 500; }
 .sidebar-link-row a:hover { text-decoration: underline; }
 
-[data-testid="stSidebar"] [data-testid="stToggle"] label,
-[data-testid="stSidebar"] [data-testid="stToggle"] p {
-    color: rgba(255,255,255,0.55) !important; font-size: 0.74rem !important;
-}
 
 /* Main area */
 .page-eyebrow {
@@ -192,7 +171,6 @@ section[data-testid="stSidebar"] > div:first-child { width: 300px !important; }
 .bag-card {
     background: var(--surface); border-radius: 14px;
     padding: 1.2rem 1.4rem; border: 1px solid var(--border);
-    transition: background 0.25s, border-color 0.25s;
 }
 .bag-card .bc-label {
     font-size: 0.68rem; font-weight: 600; letter-spacing: 1px;
@@ -455,10 +433,6 @@ for mkt, st_ in market_state_map.items():
 # ─────────────────────────────────────────────────────────────────────────────
 # SIDEBAR — permanent, inputs only
 # ─────────────────────────────────────────────────────────────────────────────
-# ── Dark mode state ──
-if "dark_mode" not in st.session_state:
-    st.session_state.dark_mode = False
-
 with st.sidebar:
     st.markdown("""
     <div class="sidebar-brand">
@@ -506,34 +480,17 @@ with st.sidebar:
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # ── Dark mode toggle + link ──
+    # ── App link ──
     st.markdown('<div class="sidebar-bottom">', unsafe_allow_html=True)
-    dark_mode = st.toggle("Dark mode", value=st.session_state.dark_mode, key="dark_toggle")
-    st.session_state.dark_mode = dark_mode
     st.markdown(
         '<div class="sidebar-link-row">'
-        'Deployed on &nbsp;<a href="https://streamlit.io" target="_blank">Streamlit</a>'
-        '<br>View source on &nbsp;<a href="https://github.com" target="_blank">GitHub</a>'
+        '<a href="https://your-app.streamlit.app" target="_blank">🔗 Open live app</a>'
         '</div>',
         unsafe_allow_html=True,
     )
     st.markdown('</div>', unsafe_allow_html=True)
 
 
-
-# ── Apply dark mode theme attribute via JS ──
-_theme = "dark" if st.session_state.get("dark_mode", False) else "light"
-st.markdown(
-    f'''<script>
-        (function() {{
-            var root = window.parent.document.querySelector("[data-testid=\'stAppViewContainer\']");
-            if (root) root.setAttribute("data-theme", "{_theme}");
-            var body = window.parent.document.body;
-            if (body) body.setAttribute("data-theme", "{_theme}");
-        }})();
-    </script>''',
-    unsafe_allow_html=True,
-)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # MAIN AREA — results, always rendered (no button gate)
@@ -669,4 +626,3 @@ except Exception as e:
         </div>
     </div>
     """, unsafe_allow_html=True)
-
