@@ -484,7 +484,7 @@ with st.sidebar:
     st.markdown('<div class="sidebar-bottom">', unsafe_allow_html=True)
     st.markdown(
         '<div class="sidebar-link-row">'
-        '<a href="https://your-app.streamlit.app" target="_blank">🔗 Open live app</a>'
+        '<a href="https://h6eyssdqjkulbe7ktptozx.streamlit.app/" target="_blank">🔗 Open live app</a>'
         '</div>',
         unsafe_allow_html=True,
     )
