@@ -241,20 +241,18 @@ def build_models(df):
     BASE_FEATURES = [
         "year", "month", "month_sin", "month_cos",
         "cpi", "fuel_price", "temperature", "rainfall",
-        "exchange_rate_ngn_usd",
-        "cpi_x_fuel", "cpi_x_exrate", "fuel_x_exrate",
-        "exrate_lag1", "exrate_lag3",
-        "exrate_roll_mean3", "exrate_pct_change",
-        "latitude", "longitude", "admin1_enc", "market_enc",
+        "latitude", "longitude", "cpi_x_fuel",
+        "admin1_enc", "market_enc",
     ]
 
-    macro_lookup = (df.groupby("year")[["cpi", "fuel_price", "temperature",
-                                        "rainfall", "exchange_rate_ngn_usd"]]
-                    .mean().round(4))
+    macro_lookup = (
+        df.groupby("year")[["cpi", "fuel_price", "temperature", "rainfall"]]
+        .mean().round(4)
+    )
 
     future_macro = {}
     years_arr = macro_lookup.index.values.reshape(-1, 1)
-    for col in ["cpi", "fuel_price", "temperature", "rainfall", "exchange_rate_ngn_usd"]:
+    for col in ["cpi", "fuel_price", "temperature", "rainfall"]:
         reg = LinearRegression().fit(years_arr, macro_lookup[col].values)
         for yr in range(2025, 2036):
             future_macro.setdefault(yr, {})[col] = round(float(reg.predict([[yr]])[0]), 4)
@@ -274,14 +272,12 @@ def build_models(df):
 
     trained_models = {}
     for col in price_cols:
-        ucol = "usd_" + col.replace("price_", "")
         comm_feats = (
             [f"{col}_lag{l}" for l in LAG_STEPS]
             + [f"{col}_roll_mean{w}" for w in ROLL_WINDOWS]
             + [f"{col}_roll_std3", f"{col}_deflated_lag1", f"{col}_deflated_lag3"]
-            + [f"{ucol}_lag1", f"{ucol}_lag3", f"{ucol}_lag12", f"{ucol}_roll_mean3"]
         )
-        feat_cols = BASE_FEATURES + [f for f in comm_feats if f in df.columns]
+        feat_cols = BASE_FEATURES + comm_feats
         sub = df[df[col].notna()].dropna(subset=feat_cols).copy()
         rf = RandomForestRegressor(n_estimators=300, max_depth=12,
                                    min_samples_leaf=5, random_state=42, n_jobs=-1)
@@ -324,40 +320,27 @@ def predict_price(commodity_col, market, state, year, month, bundle):
     std3=float(np.std(hist[-3:]))
     defl1=lag1/macro["cpi"]*base_cpi; defl3=lag3/macro["cpi"]*base_cpi
 
-    exrate = macro.get("exchange_rate_ngn_usd", macro["cpi"])
-    ucol   = "usd_" + commodity_col.replace("price_", "")
-    u_lag1 = lag1 / exrate if exrate > 0 else 0
-    u_lag3 = lag3 / exrate if exrate > 0 else 0
-    u_lag12= lag12 / exrate if exrate > 0 else 0
-    u_roll3= roll3 / exrate if exrate > 0 else 0
-
     month_sin  = np.sin(2*np.pi*month/12)
     month_cos  = np.cos(2*np.pi*month/12)
-    cpi_x_fuel = macro["cpi"]*macro["fuel_price"]
-    cpi_x_er   = macro["cpi"]*exrate
-    fuel_x_er  = macro["fuel_price"]*exrate
+    cpi_x_fuel = macro["cpi"] * macro["fuel_price"]
 
     feat_vals = {
         "year":year, "month":month, "month_sin":month_sin, "month_cos":month_cos,
         "cpi":macro["cpi"], "fuel_price":macro["fuel_price"],
         "temperature":macro["temperature"], "rainfall":macro["rainfall"],
-        "exchange_rate_ngn_usd":exrate,
-        "cpi_x_fuel":cpi_x_fuel, "cpi_x_exrate":cpi_x_er, "fuel_x_exrate":fuel_x_er,
-        "exrate_lag1":exrate, "exrate_lag3":exrate,
-        "exrate_roll_mean3":exrate, "exrate_pct_change":0.0,
         "latitude":float(meta["latitude"]), "longitude":float(meta["longitude"]),
+        "cpi_x_fuel":cpi_x_fuel,
         "admin1_enc":int(meta["admin1_enc"]), "market_enc":int(meta["market_enc"]),
         f"{commodity_col}_lag1":lag1, f"{commodity_col}_lag3":lag3,
         f"{commodity_col}_lag6":lag6, f"{commodity_col}_lag12":lag12,
         f"{commodity_col}_roll_mean3":roll3, f"{commodity_col}_roll_mean6":roll6,
         f"{commodity_col}_roll_std3":std3,
         f"{commodity_col}_deflated_lag1":defl1, f"{commodity_col}_deflated_lag3":defl3,
-        f"{ucol}_lag1":u_lag1, f"{ucol}_lag3":u_lag3,
-        f"{ucol}_lag12":u_lag12, f"{ucol}_roll_mean3":u_roll3,
     }
 
     model_info  = trained_models[commodity_col]
-    feat_vector = np.array([feat_vals.get(f, 0) for f in model_info["features"]]).reshape(1,-1)
+    # Use .get(f, 0) so any feature not in feat_vals defaults to 0 gracefully
+    feat_vector = np.array([feat_vals.get(f, 0.0) for f in model_info["features"]]).reshape(1,-1)
     pred        = max(float(model_info["model"].predict(feat_vector)[0]), 0.0)
     return round(pred, 2)
 
